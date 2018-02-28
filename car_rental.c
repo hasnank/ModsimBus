@@ -45,10 +45,15 @@ main ()				/* Main function. */
   
   // INTERARRIVAL RATE PER HOUR AT LOCATION 1, 2, 3
   fscanf (infile, "%d %d %d", &interarrival_rate_1, &interarrival_rate_2, &interarrival_rate_3);
+  // interarrival kedatangan orang dalam detik
+  mean_interarrival_1 = 3600/interarrival_rate_1;
+  mean_interarrival_2 = 3600/interarrival_rate_2;
+  mean_interarrival_3 = 3600/interarrival_rate_3;
  
   // KAPASITAS PER BUS, KECEPATAN PER HOUR
   fscanf (infile, "%d %d", &num_seats, &speed);
-
+  speed = speed * 3600; // miles per second
+  
   // initial location: 3
   
   // PELUANG PERSON TURUN KE DESTINATION 1, 2, dan 3
@@ -58,6 +63,11 @@ main ()				/* Main function. */
   // JARAK COUNTER CLOCKWISE LOCATION 3->1, 1->2, 2->3 in MILES
   for (i = 1; i <= num_location; ++i)
     fscanf (infile, "%lg", &destination[i]);
+    
+  // replace jarak dengan waktu tempuh  
+  for (i = 1; i<= num_location; ++i) {
+	destination[i] = speed/destination[i];
+  }
 
   // UNLOAD SECONDS
   fscanf (infile, "%d %d", &unload_a, &unload_b);
@@ -67,9 +77,11 @@ main ()				/* Main function. */
 
   // WAITING_TIME in MINUTES
   fscanf (infile, "%d", &waiting_time);
+  waiting_time = waiting_time * 60; // waiting time in seconds
   
   // LENGTH SIMULATION 80 hours
   fscanf (infile, "%d", &length_simulation);
+  length_simulation = length_simulation * 3600; // simulation length in seconds
   
   /* Initialize all seats in all busses to empty state. */
 
