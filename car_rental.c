@@ -121,8 +121,14 @@ main ()				/* Main function. */
 
       switch (next_event_type)
 	{
-	case EVENT_ARRIVAL:
+	case EVENT_ARRIVAL_1:
 	  arrive (1);
+	  break;
+	case EVENT_ARRIVAL_2:
+	  arrive (2);
+	  break;
+	case EVENT_ARRIVAL_3:
+	  arrive (3);
 	  break;
 	case EVENT_DEPARTURE:
 	  depart ();
