@@ -73,6 +73,14 @@ main ()				/* Main function. */
 
   fclose (infile);
   fclose (outfile);
+  
+  /*
+  printf("Jumlah lokasi: %d\n", num_location);
+  printf("Unload a: %d\n", unload_a);
+  printf("Distance 3 to 1 %lg\n", destination[1]);
+  printf("Kecepatan: %d\n", speed);
+  printf("Length simulation %d\n", length_simulation);
+  */ 
 
   return 0;
 }
