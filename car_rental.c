@@ -70,6 +70,62 @@ main ()				/* Main function. */
   
   // LENGTH SIMULATION 80 hours
   fscanf (infile, "%d", &length_simulation);
+  
+  /* Initialize all seats in all busses to empty state. */
+
+  for (j = 1; j <= num_bus; ++j)
+    num_seats_taken[j] = 0;
+
+  /* Initialize simlib */
+
+  init_simlib ();
+
+  /* Set maxatr = max(maximum number of attributes per record, 4) */
+
+  maxatr = 4;			/* NEVER SET maxatr TO BE SMALLER THAN 4. */
+
+  /* Schedule the arrival at each terminal queue. */
+
+  event_schedule (expon (mean_interarrival_1, STREAM_INTERARRIVAL_1), EVENT_ARRIVAL_1);
+  event_schedule (expon (mean_interarrival_2, STREAM_INTERARRIVAL_2), EVENT_ARRIVAL_2);
+  event_schedule (expon (mean_interarrival_3, STREAM_INTERARRIVAL_3), EVENT_ARRIVAL_3);
+
+  /* Schedule the end of the simulation.  (This is needed for consistency of
+     units.) */
+
+  event_schedule (length_simulation, EVENT_END_SIMULATION);
+
+  /* Run the simulation until it terminates after an end-simulation event
+     (type EVENT_END_SIMULATION) occurs. */
+
+  do
+    {
+
+      /* Determine the next event. */
+
+      timing ();
+
+      /* Invoke the appropriate event function. */
+
+      switch (next_event_type)
+	{
+	case EVENT_ARRIVAL:
+	  arrive (1);
+	  break;
+	case EVENT_DEPARTURE:
+	  depart ();
+	  break;
+	case EVENT_END_SIMULATION:
+	  report ();
+	  break;
+	}
+
+      /* If the event just executed was not the end-simulation event (type
+         EVENT_END_SIMULATION), continue simulating.  Otherwise, end the
+         simulation. */
+
+    }
+  while (next_event_type != EVENT_END_SIMULATION);
 
   fclose (infile);
   fclose (outfile);
