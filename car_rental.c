@@ -206,7 +206,7 @@ main ()				/* Main function. */
     
   // replace jarak dengan waktu tempuh  
   for (i = 1; i<= num_location; ++i) {
-	distance[i] = speed/distance[i];
+	distance[i][j] = speed/distance[i][j];
   }
 
   // UNLOAD SECONDS

@@ -30,3 +30,45 @@ Distance from
   Location 3 to 1   540.000 seconds
   Location 3 to 2   660.000 seconds
   Location 3 to 3     0.000 seconds
+
+a.
+  Average number in terminal 1 queue     222.799
+  Maximum number in terminal 1 queue     443.000
+  Average number in terminal 2 queue     6.916
+  Maximum number in terminal 2 queue     28.000
+  Average number in terminal 3 queue     157.444
+  Maximum number in terminal 3 queue     290.000
+
+
+b.
+  Average delay in terminal 1 queue     141680.457
+  Maximum delay in terminal 1 queue     285446.390
+  Average delay in terminal 2 queue     147261.124
+  Maximum delay in terminal 2 queue     286269.091
+  Average delay in terminal 3 queue     145816.983
+  Maximum delay in terminal 3 queue     287679.194
+
+
+c.
+
+
+d.
+
+
+e.
+  Number						    78.000
+  Average time to make a loop    3648.730
+  Maximum time to make a loop    4141.908
+  Minimum time to make a loop	3086.129
+
+
+f.
+  Average delay in terminal 1 queue     26115.848
+  Maximum delay in terminal 1 queue     45771.233
+  Minimum delay in terminal 1 queue     2003.738
+  Average delay in terminal 2 queue     27482.627
+  Maximum delay in terminal 2 queue     46512.034
+  Minimum delay in terminal 2 queue     2896.051
+  Average delay in terminal 3 queue     29508.533
+  Maximum delay in terminal 3 queue     115177.234
+  Minimum delay in terminal 3 queue     1081.257
