@@ -47,87 +47,43 @@ void
 arrive(int arrival_location)		/* Function to serve an arrival event of a person
 				   to the location arrival_location */
 {
-	switch (arrival_location) {
-		case 1: 
+	if (arrival_location == 1) {
 			event_schedule (sim_time + expon (mean_interarrival[1], STREAM_INTERARRIVAL_1), EVENT_ARRIVAL_1);
 			destination = 3;
 			person = 0;
-			
-			if (list_size[arrival_location] == 0) {
-				transfer[3] = 3; // destination
-				transfer[4] = 0; // how many person queueing in front of him
-			printf("Arrival_location 1: %0.3f %0.3f %0.3f %0.3f\n", transfer[1], transfer[2], transfer[3], transfer[4]);
-				list_file (LAST, arrival_location);
-				// event_schedule			
-					
-			} else {
-				 /* This person is not the first in his queue
-				 * so place the arriving person at the end of the appropriate queue.
-				 1. Time of arrival to this location.
-				 2. Destination.
-				 3. How many person is queueing in front of him.  */
-				transfer[1] = sim_time;
-				transfer[2] = destination;
-				transfer[3] = list_size[arrival_location];
-			printf("Arrival_location 1 queue: %0.3f %0.3f %0.3f \n", transfer[1], transfer[2], transfer[3]);
-				list_file (LAST, arrival_location);
-			}
-			break;
-		case 2:
-			arrival_location = 2;
+	} else if (arrival_location == 2) {
 			event_schedule (sim_time + expon (mean_interarrival[2], STREAM_INTERARRIVAL_2), EVENT_ARRIVAL_2);
 			destination = 3;
 			person = 0;
-			
-			if (list_size[arrival_location] == 0) {
-				transfer[3] = destination;
-				transfer[4] = person;
-			printf("Arrival_location 2 : %0.3f %0.3f %0.3f %0.3f\n", transfer[1], transfer[2], transfer[3], transfer[4]);
-				list_file (LAST, arrival_location);
-				// event_schedule			
-					
-			} else {
-				 /* This person is not the first in his queue
-				 * so place the arriving person at the end of the appropriate queue.
-				 1. Time of arrival to this location.
-				 2. Destination.
-				 3. How many person is queueing in front of him.  */
-				transfer[1] = sim_time;
-				transfer[2] = destination;
-				transfer[3] = list_size[2];
-			printf("Arrival_location 2 queue : %0.3f %0.3f %0.3f \n", transfer[1], transfer[2], transfer[3]);
-				list_file (LAST, arrival_location);
-			}
-			break;
-		case 3:
+	} else if (arrival_location == 3) {
 			event_schedule (sim_time + expon (mean_interarrival[3], STREAM_INTERARRIVAL_3), EVENT_ARRIVAL_3);
 			prob_dest = lcgrand(STREAM_DESTINATION);
-			  if (prob_dest >= prob_distrib_destination[1]) 
-				destination = 1;
-			  else 
-				destination = 2;
+		    if (prob_dest >= prob_distrib_destination[1]) 
+			  destination = 1;
+		    else 
+			  destination = 2;
 			person = 0;
+	}	
+		
+	if (list_size[arrival_location] == 0) {
+		/* This person is the first in his location but still need to be placed at queue*/
+		transfer[3] = destination;
+		transfer[4] = person;
+	printf("Arrival_location %d : %0.3f %0.3f %0.3f %0.3f\n", arrival_location, transfer[1], transfer[2], transfer[3], transfer[4]);
+		list_file (LAST, arrival_location);
+		// event_schedule?????		
 			
-			if (list_size[3] == 0) {
-				transfer[3] = destination;
-				transfer[4] = person;
-			printf("Arrival_location 3 : %0.3f %0.3f %0.3f %0.3f\n", transfer[1], transfer[2], transfer[3], transfer[4]);
-				list_file (LAST, arrival_location);
-				// event_schedule			
-			} else {
-				 /* This person is not the first in his queue
-				 * so place the arriving person at the end of the appropriate queue.
-				 1. Time of arrival to this location.
-				 2. Destination.
-				 3. How many person is queueing in front of him.  */
-				transfer[1] = sim_time;
-				transfer[2] = destination;
-				transfer[3] = list_size[3];
-			printf("Arrival_location 3 queue: %0.3f %0.3f %0.3f \n", transfer[1], transfer[2], transfer[3]);
-				list_file (LAST, arrival_location);
-			}
-			break;
-		default: break;
+	} else {
+		 /* This person is not the first in his queue
+		 * so place the arriving person at the end of the appropriate queue.
+		 1. Time of arrival to this location.
+		 2. Destination.
+		 3. How many person is queueing in front of him.  */
+		transfer[1] = sim_time;
+		transfer[2] = destination;
+		transfer[3] = list_size[arrival_location];
+	printf("Arrival_location %d queue : %0.3f %0.3f %0.3f \n", arrival_location, transfer[1], transfer[2], transfer[3]);
+		list_file (LAST, arrival_location);
 	}
 }
 	
