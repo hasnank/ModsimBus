@@ -39,7 +39,7 @@ int arrival_location, waiting_time, unload_a, unload_b, load_a, load_b, length_s
   is_moving, total_passenger, is_loop;
 double prob_dest, mean_interarrival[MAX_NUM_LOCATION+1], prob_distrib_destination[26],
   mean_service[MAX_NUM_LOCATION + 1][MAX_NUM_BUS + 1], distance[MAX_NUM_LOCATION+1][MAX_NUM_LOCATION+1], load_time, speed,
-  loop_init, loop_final, depart_time, arrive_time;
+  loop_init, loop_final, arrive_time;
 FILE *infile, *outfile;
 
 void load(void) {
@@ -133,6 +133,7 @@ arrive(int arrival_location)		/* Function to serve an arrival event of a person
 void bus_arrive(void) {
 	int temp = bus_position;
 	is_moving = 0;
+	
 	if (bus_position == 3) {
 		bus_position = 1;
 	} else {
@@ -146,6 +147,10 @@ void bus_arrive(void) {
 		sampst(loop_final - loop_init, 10);
 		loop_init = loop_final;
 	}
+	
+	// hitung waktu visit tiap terminal
+	sampst(sim_time - arrive_time - distance[temp][bus_position], temp + 6);
+	arrive_time = sim_time;
 	
 	printf("BUS TIBA DI %d jam %0.3f\n", bus_position, sim_time);
 	if (list_size[bus_position+3] > 0 && !is_moving) {
@@ -196,6 +201,13 @@ void report(void){
 	fprintf (outfile, "\n\nc.\n");		
 	
 	fprintf (outfile, "\n\nd.\n");
+	for (i = 1; i <= MAX_NUM_LOCATION; i++){
+		sampst(0.0, -i-6);
+		fprintf (outfile, "  Number						  		  %0.3f\n", transfer[2]);
+		fprintf (outfile, "  Average time stop in terminal %d     %0.3f\n", i, transfer[1]);
+		fprintf (outfile, "  Maximum time stop in terminal %d     %0.3f\n", i, transfer[3]);
+		fprintf (outfile, "  Minimum time stop in terminal %d     %0.3f\n", i, transfer[4]);
+	}
 	
 	fprintf (outfile, "\n\ne.\n");
 	sampst(0.0, -10);
