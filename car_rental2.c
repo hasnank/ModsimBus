@@ -14,10 +14,10 @@
 				   location 2. */
 #define EVENT_ARRIVAL_3         3	/* Event type for arrival of a person to the
 				   location 3. */
-#define EVENT_LOAD       4	/* Event type for loading of a person to the bus. */
-#define EVENT_DEPARTURE       5	/* Event type for departure of a person from a
+#define EVENT_DEPARTURE       4	/* Event type for loading of a person to the bus. */
+#define EVENT_BUS_ARRIVE       5	/* Event type for departure of a person from a
 				   the bus. */
-#define EVENT_UNLOAD       6	/* Event type for unloading of a person from the bus. */
+#define EVENT_BUS_DEPART       6	/* Event type for unloading of a person from the bus. */
 
 #define EVENT_END_SIMULATION  7	/* Event type for end of the simulation. */
 #define STREAM_INTERARRIVAL_1   1	/* Random-number stream for interarrivals at location 1. */
@@ -42,6 +42,19 @@ FILE *infile, *outfile;
 
 /* If no person is departing from bus, generate the time of this person
 	  to get on bus and determine the destination and number of person queueing in front of him. */
+void load(void) {
+	printf("panggil load\n");
+	while (list_size[bus_position]>0 && (num_seats_taken < 20)) {
+			list_remove(FIRST,bus_position);
+			transfer[3] = bus_position; //ubah atribut yang tadinya nyimpen orang di depannya, jadi arrival_location
+			printf("Masuk ke bus %0.3f %0.3f %0.3f\n", transfer[1], transfer[2], transfer[3]);
+			list_file(LAST,4);
+			++num_seats_taken;
+		
+	}
+	// unload();
+	
+}
 	  
 void
 arrive(int arrival_location)		/* Function to serve an arrival event of a person
@@ -67,9 +80,10 @@ arrive(int arrival_location)		/* Function to serve an arrival event of a person
 		
 	if (list_size[arrival_location] == 0) {
 		/* This person is the first in his location but still need to be placed at queue*/
-		transfer[3] = destination;
-		transfer[4] = person;
-	printf("Arrival_location %d : %0.3f %0.3f %0.3f %0.3f\n", arrival_location, transfer[1], transfer[2], transfer[3], transfer[4]);
+		transfer[1] = sim_time;
+		transfer[2] = destination;
+		transfer[3] = person;
+	printf("Arrival_location %d : %0.3f %0.3f %0.3f \n", arrival_location, transfer[1], transfer[2], transfer[3]);
 		list_file (LAST, arrival_location);
 		// event_schedule?????		
 			
@@ -85,14 +99,40 @@ arrive(int arrival_location)		/* Function to serve an arrival event of a person
 	printf("Arrival_location %d queue : %0.3f %0.3f %0.3f \n", arrival_location, transfer[1], transfer[2], transfer[3]);
 		list_file (LAST, arrival_location);
 	}
-}
 	
+	if (bus_position == arrival_location) {
+		load();
+	}
+}
+
+
+void bus_move(void) {
+	if (bus_position == 3) {
+		bus_position = 1;
+	} else {
+		bus_position++;
+	}
+  printf("Bus pindah ke %d jam %0.3f\n", bus_position, sim_time);
+	event_schedule(sim_time, EVENT_BUS_ARRIVE);
+}
+
+void bus_arrive(void) {
+	if (list_size[4] > 0) {
+		//unload dulu
+	} 
+	
+	if (list_size[bus_position] > 0) {
+		//load
+	}
+
+	// ceritanya nambah 5 menit terus
+	printf("BUS BERANGKAT\n");
+	event_schedule(sim_time+waiting_time, EVENT_BUS_DEPART);
+}
+
 int
 main ()				/* Main function. */
-{
-  // Location awal bus
-  bus_position = 3;
-  
+{  
   /* Open input and output files. */
   infile = fopen ("car_rental.in", "r");
   outfile = fopen ("car_rental.out", "w");
@@ -159,28 +199,31 @@ main ()				/* Main function. */
 
 
   /* Initialize all seats in bus to the empty state. */
-
   for (j = 1; j <= num_seats; ++j)
     num_seats_taken = 0;
 
   /* Initialize simlib */
-
   init_simlib ();
 
   /* Set maxatr = max(maximum number of attributes per record, 4) */
-
   maxatr = 4;			/* NEVER SET maxatr TO BE SMALLER THAN 4. */
   
+  /* Schedule the end of the simulation.  (This is needed for consistency of
+     units.) HARUS DISCHEDULE PERTAMA*/
+  //event_schedule (length_simulation, EVENT_END_SIMULATION);
+  event_schedule (3600, EVENT_END_SIMULATION);
+  
   /* Schedule the arrival of the first person in each location. */
-
   event_schedule (expon (mean_interarrival[1], STREAM_INTERARRIVAL_1), EVENT_ARRIVAL_1);
   event_schedule (expon (mean_interarrival[2], STREAM_INTERARRIVAL_2), EVENT_ARRIVAL_2);
   event_schedule (expon (mean_interarrival[3], STREAM_INTERARRIVAL_3), EVENT_ARRIVAL_3);
 
-  /* Schedule the end of the simulation.  (This is needed for consistency of
-     units.) */
+  // Location awal bus
+  bus_position = 3;
 
-  event_schedule (length_simulation, EVENT_END_SIMULATION);
+  /* Schedule the first arrival of bus in location. */
+  event_schedule (sim_time, EVENT_BUS_ARRIVE);
+
 
   /* Setting location list to stay ordered by attribute arrival time */
   for (i = 1; i<=num_location; ++i)
@@ -214,14 +257,14 @@ main ()				/* Main function. */
     case EVENT_ARRIVAL_3:
       arrive(3);
       break;
-    case EVENT_LOAD:
-//      load ();
-      break;
 	case EVENT_DEPARTURE:
 //	  depart ();
 	  break;
-	case EVENT_UNLOAD:
-//      unload ();
+    case EVENT_BUS_ARRIVE:
+      bus_arrive();
+      break;
+	case EVENT_BUS_DEPART:
+	  bus_move();
       break;
 	case EVENT_END_SIMULATION:
 //	  report ();
@@ -234,6 +277,13 @@ main ()				/* Main function. */
 
     }
   while (next_event_type != EVENT_END_SIMULATION);
+
+i = 1;
+while (list_size[4] >0) {
+	list_remove(FIRST,4);
+	printf("ISI BUS %d arrival_time to terminal %0.3f, destination %0.3f, arrival_location %0.3f\n", i, transfer[1], transfer[2], transfer[3]);
+	i++;
+}
 
   fclose (infile);
   fclose (outfile);
