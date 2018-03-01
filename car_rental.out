@@ -18,15 +18,15 @@ Mean interarrival time of location
 
 Length of the simulation 288000 seconds
 
-Bus speed 108000 miles per second
+Bus speed 0.00833333 miles per second
 
 Distance from  
-  Location 1 to 1       inf seconds
-  Location 1 to 2  108000.000 seconds
-  Location 1 to 3  19636.364 seconds
-  Location 2 to 1  12000.000 seconds
-  Location 2 to 2       inf seconds
-  Location 2 to 3  24000.000 seconds
-  Location 3 to 1  24000.000 seconds
-  Location 3 to 2  19636.364 seconds
-  Location 3 to 3       inf seconds
+  Location 1 to 1     0.000 seconds
+  Location 1 to 2   120.000 seconds
+  Location 1 to 3   660.000 seconds
+  Location 2 to 1  1080.000 seconds
+  Location 2 to 2     0.000 seconds
+  Location 2 to 3   540.000 seconds
+  Location 3 to 1   540.000 seconds
+  Location 3 to 2   660.000 seconds
+  Location 3 to 3     0.000 seconds
