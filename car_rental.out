@@ -1,0 +1,32 @@
+Car-rental model
+
+Number of bus 1
+
+Number of seats in each bus 20
+
+Number of destination 3
+
+Distribution function of destination  
+  Location 1    0.583
+  Location 2    0.417
+  Location 3    1.000
+
+Mean interarrival time of location   
+  Location 1 14 per hour
+  Location 2 10 per hour
+  Location 3 24 per hour
+
+Length of the simulation 288000 seconds
+
+Bus speed 108000 miles per second
+
+Distance from  
+  Location 1 to 1       inf seconds
+  Location 1 to 2  108000.000 seconds
+  Location 1 to 3  19636.364 seconds
+  Location 2 to 1  12000.000 seconds
+  Location 2 to 2       inf seconds
+  Location 2 to 3  24000.000 seconds
+  Location 3 to 1  24000.000 seconds
+  Location 3 to 2  19636.364 seconds
+  Location 3 to 3       inf seconds
