@@ -56,6 +56,7 @@ void load(void) {
 			list_file(LAST,6);
 		}
 		++num_seats_taken;
+		timest((double) num_seats_taken, 1);
 		++total_passenger;
 		sampst(sim_time - transfer[1] + load_time, bus_position);
 		load_time += uniform(load_a,load_b,STREAM_LOADING);
@@ -73,6 +74,7 @@ void unload(void) {
 		list_remove(FIRST,bus_position+3);
 		printf("Keluar dari bus di waktu %0.3f arrival_time: %0.3f destination: %0.3f arrival_location: %0.3f\n", load_time+sim_time, transfer[1], transfer[2], transfer[3]);
 		--num_seats_taken;
+		timest((double) num_seats_taken, 1);
 		sampst(sim_time - transfer[1] + load_time, bus_position + 3);
 	}
 	event_cancel(EVENT_BUS_DEPART);
@@ -198,12 +200,14 @@ void report(void){
 		fprintf (outfile, "  Maximum delay in terminal %d queue     %0.3f\n", i, transfer[3]);
 	}
 	
-	fprintf (outfile, "\n\nc.\n");		
+	fprintf (outfile, "\n\nc.\n");
+	timest(0.0, -1);
+	fprintf (outfile, "  Average number on the bus    %0.3f\n", transfer[1]);
+	fprintf (outfile, "  Maximum number on the bus    %0.3f\n", transfer[2]);
 	
 	fprintf (outfile, "\n\nd.\n");
 	for (i = 1; i <= MAX_NUM_LOCATION; i++){
 		sampst(0.0, -i-6);
-		fprintf (outfile, "  Number						  		  %0.3f\n", transfer[2]);
 		fprintf (outfile, "  Average time stop in terminal %d     %0.3f\n", i, transfer[1]);
 		fprintf (outfile, "  Maximum time stop in terminal %d     %0.3f\n", i, transfer[3]);
 		fprintf (outfile, "  Minimum time stop in terminal %d     %0.3f\n", i, transfer[4]);
@@ -211,7 +215,6 @@ void report(void){
 	
 	fprintf (outfile, "\n\ne.\n");
 	sampst(0.0, -10);
-	fprintf (outfile, "  Number						    %0.3f\n", transfer[2]);
 	fprintf (outfile, "  Average time to make a loop    %0.3f\n", transfer[1]);
 	fprintf (outfile, "  Maximum time to make a loop    %0.3f\n", transfer[3]);
 	fprintf (outfile, "  Minimum time to make a loop	%0.3f\n", transfer[4]);

@@ -50,25 +50,23 @@ b.
 
 
 c.
+  Average number on the bus    19.397
+  Maximum number on the bus    20.000
 
 
 d.
-  Number						  		  79.000
   Average time stop in terminal 1     654.034
   Maximum time stop in terminal 1     861.329
   Minimum time stop in terminal 1     453.751
-  Number						  		  79.000
   Average time stop in terminal 2     715.780
   Maximum time stop in terminal 2     1272.872
   Minimum time stop in terminal 2     331.593
-  Number						  		  79.000
   Average time stop in terminal 3     1062.467
   Maximum time stop in terminal 3     1154.847
   Minimum time stop in terminal 3     0.000
 
 
 e.
-  Number						    78.000
   Average time to make a loop    3648.730
   Maximum time to make a loop    4141.908
   Minimum time to make a loop	3086.129
