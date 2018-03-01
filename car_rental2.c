@@ -35,20 +35,17 @@
 /* Declare non-simlib global variables. */
 
 int arrival_location, waiting_time, unload_a, unload_b, load_a, load_b, length_simulation, num_bus, num_location, i, j, num_seats,
-  num_person[MAX_NUM_LOCATION+ 1], interarrival_rate[MAX_NUM_LOCATION+1], num_seats_taken, destination, person, bus_position;
+  num_person[MAX_NUM_LOCATION+ 1], interarrival_rate[MAX_NUM_LOCATION+1], num_seats_taken, destination, person, bus_position, is_moving;
 double prob_dest, mean_interarrival[MAX_NUM_LOCATION+1], prob_distrib_destination[26],
-  mean_service[MAX_NUM_LOCATION + 1][MAX_NUM_BUS + 1], distance[MAX_NUM_LOCATION+1][MAX_NUM_LOCATION+1], load_time, unload_time, speed;
+  mean_service[MAX_NUM_LOCATION + 1][MAX_NUM_BUS + 1], distance[MAX_NUM_LOCATION+1][MAX_NUM_LOCATION+1], load_time, speed;
 FILE *infile, *outfile;
 
 void load(void) {
-	load_time = 0;
-	load_time+=unload_time;
 	while (list_size[bus_position]>0 && (num_seats_taken < 20)) {
 		list_remove(FIRST,bus_position);
 		transfer[3] = bus_position; //ubah atribut yang tadinya nyimpen orang di depannya, jadi arrival_location
 		printf("Masuk ke bus di jam %0.3f arrival_time: %0.3f destination: %0.3f arrival_location: %0.3f\n", sim_time+load_time, transfer[1], transfer[2], transfer[3]);
-		printf("batal batal. ubah ke %0.3f\n", sim_time+waiting_time+load_time);
-
+		
 		if (transfer[2] == 1) {
 			list_file(LAST,4);
 		} else if (transfer[2] == 2) {
@@ -60,22 +57,23 @@ void load(void) {
 		load_time += uniform(load_a,load_b,STREAM_LOADING);
 		event_cancel(EVENT_BUS_DEPART);
 		event_schedule(sim_time+waiting_time+load_time, EVENT_BUS_DEPART);
-
+		printf("schedule1 batal batal. ubah ke %0.3f\n", sim_time+waiting_time+load_time);
 	}
+	load_time = 0;
 }
 
 void unload(void) {
-	unload_time = 0;
+	load_time = 0;
 	while (list_size[bus_position+3] >0) {
-		unload_time += uniform(unload_a, unload_b,STREAM_UNLOADING);
+		load_time += uniform(unload_a, unload_b,STREAM_UNLOADING);
 		list_remove(FIRST,bus_position+3);
-		printf("Keluar dari bus di waktu %0.3f arrival_time: %0.3f destination: %0.3f arrival_location: %0.3f\n", unload_time+sim_time, transfer[1], transfer[2], transfer[3]);
+		printf("Keluar dari bus di waktu %0.3f arrival_time: %0.3f destination: %0.3f arrival_location: %0.3f\n", load_time+sim_time, transfer[1], transfer[2], transfer[3]);
 		--num_seats_taken;
 	}
-		event_cancel(EVENT_BUS_DEPART);
-		printf("batal gara2 keluar. ubah ke %0.3f\n", sim_time+waiting_time+load_time);
-	event_schedule(sim_time+waiting_time+unload_time, EVENT_BUS_DEPART);
-
+	event_cancel(EVENT_BUS_DEPART);
+	event_schedule(sim_time+waiting_time+load_time, EVENT_BUS_DEPART);
+	printf("schedule2 batal gara2 keluar. ubah ke %0.3f\n", sim_time+waiting_time+load_time);
+	
 }	  
 void
 arrive(int arrival_location)		/* Function to serve an arrival event of a person
@@ -107,7 +105,7 @@ arrive(int arrival_location)		/* Function to serve an arrival event of a person
 	printf("Arrival_location %d : %0.3f %0.3f %0.3f \n", arrival_location, transfer[1], transfer[2], transfer[3]);
 		list_file (LAST, arrival_location);
 		// event_schedule?????
-		if (bus_position == arrival_location) {
+		if (bus_position == arrival_location && !is_moving) {
 			load();
 		}		
 			
@@ -128,30 +126,41 @@ arrive(int arrival_location)		/* Function to serve an arrival event of a person
 
 
 void bus_arrive(void) {
-	printf("BUS TIBA DI %d jam %0.3f\n", bus_position, sim_time);
-	if (list_size[bus_position+3] > 0) {
-		unload();
-	} 
-	
-	if (list_size[bus_position] > 0) {
-		load();
-	}
-
-	// ceritanya nambah 5 menit terus
-	event_schedule(sim_time+waiting_time+unload_time+load_time, EVENT_BUS_DEPART);
-}
-
-
-void bus_move(void) {
-	int temp = bus_position;
+	is_moving = 0;
 	if (bus_position == 3) {
 		bus_position = 1;
 	} else {
 		bus_position++;
 	}
-    printf("Bus move dari %d ke %d jam %0.3f\n", temp, bus_position, sim_time);
-    event_cancel(EVENT_BUS_ARRIVE);
-	event_schedule(sim_time+distance[temp][bus_position], EVENT_BUS_ARRIVE);
+	printf("BUS TIBA DI %d jam %0.3f\n", bus_position, sim_time);
+	if (list_size[bus_position+3] > 0 && !is_moving) {
+		unload();
+	} 
+	
+	if (list_size[bus_position] > 0 && !is_moving) {
+		load();
+	}
+	
+}
+
+
+void bus_move(void) {
+	int temp = bus_position;
+	int dest;
+	is_moving = 1;
+	if (bus_position == 3) {
+		dest = 1;
+	} else if (bus_position == 2){
+		dest = 3;
+	} else if (bus_position == 1){
+		dest = 2;
+	}
+	
+    printf("Bus move dari %d ke %d jam %0.3f\n", temp, dest, sim_time);
+//  event_cancel(EVENT_BUS_ARRIVE);
+	event_schedule(sim_time+distance[temp][dest], EVENT_BUS_ARRIVE);
+	printf("schedule 4 %0.3f bakal nyampe jam\n", sim_time+distance[temp][dest]);
+	
 }
 
 int
@@ -250,8 +259,7 @@ main ()				/* Main function. */
   bus_position = 3;
 
   /* Schedule the first arrival of bus in location. */
-  event_schedule (sim_time, EVENT_BUS_ARRIVE);
-
+  event_schedule (sim_time, EVENT_BUS_DEPART);
 
   /* Setting location list to stay ordered by attribute arrival time */
   for (i = 1; i<=num_location; ++i)
@@ -302,7 +310,7 @@ main ()				/* Main function. */
 
     }
   while (next_event_type != EVENT_END_SIMULATION);
-
+/*
 i = 1;
 while (list_size[4] >0) {
 	list_remove(FIRST,4);
@@ -322,7 +330,7 @@ while (list_size[6] >0) {
 	list_remove(FIRST,6);
 	printf("ISI BUS %d arrival_time to terminal %0.3f, destination %0.3f, arrival_location %0.3f\n", i, transfer[1], transfer[2], transfer[3]);
 	i++;
-}
+}*/
   fclose (infile);
   fclose (outfile);
   
