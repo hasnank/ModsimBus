@@ -1,3 +1,10 @@
+/* 
+ * IF 4021 Pemodelan dan Simulasi
+ * NAMA - NIM: Hasna Nur Karimah - 13514106
+ * NAMA - NIM: Audry Nyonata     - 13515087
+ * Tanggal: 2 Maret 2018
+ */
+
 /* External definitions for car-rental model. */
 
 #include "simlib.h"		/* Required for use of simlib.c. */
@@ -7,9 +14,12 @@
 				   location 2. */
 #define EVENT_ARRIVAL_3         3	/* Event type for arrival of a person to the
 				   location 3. */
-#define EVENT_DEPARTURE       2	/* Event type for departure of a person from a
+#define EVENT_DEPARTURE       4	/* Event type for loading of a person to the bus. */
+#define EVENT_BUS_ARRIVE       5	/* Event type for departure of a person from a
 				   the bus. */
-#define EVENT_END_SIMULATION  3	/* Event type for end of the simulation. */
+#define EVENT_BUS_DEPART       6	/* Event type for unloading of a person from the bus. */
+
+#define EVENT_END_SIMULATION  7	/* Event type for end of the simulation. */
 #define STREAM_INTERARRIVAL_1   1	/* Random-number stream for interarrivals at location 1. */
 #define STREAM_INTERARRIVAL_2   2	/* Random-number stream for interarrivals at location 2. */
 #define STREAM_INTERARRIVAL_3   3	/* Random-number stream for interarrivals at location 3. */
@@ -18,197 +28,245 @@
 #define STREAM_DESTINATION   6	/* Random-number stream for determining destination of an arrival at the car rental. */
 
 #define MAX_NUM_BUS 1	/* Maximum number of bus. */
-#define MAX_SEATS    20	/* Maximum number of stations. */
+#define MAX_SEATS    20	/* Maximum number of seat in a bus. */
 #define MAX_NUM_LOCATION     3	/* Maximum number of locations. */
 
 
 /* Declare non-simlib global variables. */
 
-int waiting_time, unload_a, unload_b, load_a, load_b, speed,length_simulation, interarrival_rate_1, interarrival_rate_2, interarrival_rate_3, num_bus, num_location, i, j, num_seats,
-  num_person[MAX_NUM_LOCATION+ 1],
-  route[MAX_NUM_LOCATION + 1][MAX_NUM_BUS + 1], num_seats_taken, destination, person, bus_position;
-double mean_interarrival_1, mean_interarrival_2, mean_interarrival_3, prob_distrib_destination[26],
-  mean_service[MAX_NUM_LOCATION + 1][MAX_NUM_BUS + 1], distance[MAX_NUM_LOCATION+1][MAX_NUM_LOCATION+1], load_time, unload_time;
+int arrival_location, waiting_time, unload_a, unload_b, load_a, load_b, length_simulation, num_bus, num_location, i, j, num_seats,
+  num_person[MAX_NUM_LOCATION+ 1], interarrival_rate[MAX_NUM_LOCATION+1], num_seats_taken, destination, person, bus_position,
+  is_moving, total_passenger, is_loop;
+double prob_dest, mean_interarrival[MAX_NUM_LOCATION+1], prob_distrib_destination[26],
+  mean_service[MAX_NUM_LOCATION + 1][MAX_NUM_BUS + 1], distance[MAX_NUM_LOCATION+1][MAX_NUM_LOCATION+1], load_time, speed,
+  loop_init, loop_final, arrive_time;
 FILE *infile, *outfile;
 
-void
-arrive (int location_number)		/* Function to serve as both an arrival event of a job
-				   to the system, as well as the non-event of a job's
-				   arriving to a subsequent station along its
-				   route. */
-{
-  
-  /* If this is a new arrival to the system, generate the time of the next
-     arrival and determine the job type and task number of the arriving
-     job. */
-
-  if (location_number == 1)
-    {
-
-      event_schedule (sim_time + expon (mean_interarrival_1, STREAM_INTERARRIVAL_1), EVENT_ARRIVAL_1);
-      destination = 3;
-      transfer[1] = sim_time;
-      transfer[2] = destination;
-      //transfer[3] = person;
-      list_file (LAST, 1);
-    }
-    
-  else if (location_number == 2)
-    {
-
-      event_schedule (sim_time + expon (mean_interarrival_2, STREAM_INTERARRIVAL_2), EVENT_ARRIVAL_2);
-      destination = 3;
-      transfer[1] = sim_time;
-      transfer[2] = destination;
-      //transfer[3] = person;
-      list_file (LAST, 2);
-    }
-    
-  else if (location_number == 3)
-    {
-
-      event_schedule (sim_time + expon (mean_interarrival_3, STREAM_INTERARRIVAL_3), EVENT_ARRIVAL_3);
-      double prob_dest = lcgrand (STREAM_DESTINATION);
-      if (prob_dest <= prob_distrib_destination[1])
-		{
-		  destination = 1;
-	    }
-	  else
-	    {
-		  destination = 2;
+void load(void) {
+	while (list_size[bus_position]>0 && (num_seats_taken < 20)) {
+		list_remove(FIRST,bus_position);
+		transfer[3] = bus_position; //ubah atribut yang tadinya nyimpen orang di depannya, jadi arrival_location
+		//printf("Masuk ke bus di jam %0.3f arrival_time: %0.3f destination: %0.3f arrival_location: %0.3f\n", sim_time+load_time, transfer[1], transfer[2], transfer[3]);
+		
+		if (transfer[2] == 1) {
+			list_file(LAST,4);
+		} else if (transfer[2] == 2) {
+			list_file(LAST,5);
+		} else if(transfer[2] ==3){
+			list_file(LAST,6);
 		}
-      transfer[1] = sim_time;
-      transfer[2] = destination;
-      //transfer[3] = person;
-      list_file (LAST, 3);
-    }
+		++num_seats_taken;
+		timest((double) num_seats_taken, 1);
+		++total_passenger;
+		sampst(sim_time - transfer[1] + load_time, bus_position);
+		load_time += uniform(load_a,load_b,STREAM_LOADING);
+		event_cancel(EVENT_BUS_DEPART);
+		event_schedule(sim_time+waiting_time+load_time, EVENT_BUS_DEPART);
+		//printf("schedule1 batal batal. ubah ke %0.3f\n", sim_time+waiting_time+load_time);
+	}
+	load_time = 0;
+}
 
-  /* Determine the station from the route matrix. */
-
-  //station = route[job_type][task];
-
-  /* Check to see whether bus is in my location. */
-
-  if (bus_position == location_number)
-    {
-	  load ();	  
+void unload(void) {
+	load_time = 0;
+	while (list_size[bus_position+3] >0) {
+		load_time += uniform(unload_a, unload_b,STREAM_UNLOADING);
+		list_remove(FIRST,bus_position+3);
+		//printf("Keluar dari bus di waktu %0.3f arrival_time: %0.3f destination: %0.3f arrival_location: %0.3f\n", load_time+sim_time, transfer[1], transfer[2], transfer[3]);
+		--num_seats_taken;
+		timest((double) num_seats_taken, 1);
+		sampst(sim_time - transfer[1] + load_time, bus_position + 3);
+	}
+	event_cancel(EVENT_BUS_DEPART);
+	event_schedule(sim_time+waiting_time+load_time, EVENT_BUS_DEPART);
+	//printf("schedule2 batal gara2 keluar. ubah ke %0.3f\n", sim_time+waiting_time+load_time);
+	
+}	  
+void
+arrive(int arrival_location)		/* Function to serve an arrival event of a person
+				   to the location arrival_location */
+{
+	if (arrival_location == 1) {
+			event_schedule (sim_time + expon (mean_interarrival[1], STREAM_INTERARRIVAL_1), EVENT_ARRIVAL_1);
+			destination = 3;
+			person = 0;
+	} else if (arrival_location == 2) {
+			event_schedule (sim_time + expon (mean_interarrival[2], STREAM_INTERARRIVAL_2), EVENT_ARRIVAL_2);
+			destination = 3;
+			person = 0;
+	} else if (arrival_location == 3) {
+			event_schedule (sim_time + expon (mean_interarrival[3], STREAM_INTERARRIVAL_3), EVENT_ARRIVAL_3);
+			prob_dest = lcgrand(STREAM_DESTINATION);
+		    if (prob_dest >= prob_distrib_destination[1]) 
+			  destination = 1;
+		    else 
+			  destination = 2;
+			person = 0;
+	}	
+		
+	if (list_size[arrival_location] == 0) {
+		/* This person is the first in his location but still need to be placed at queue*/
+		transfer[1] = sim_time;
+		transfer[2] = destination;
+		transfer[3] = person;
+	//printf("Arrival_location %d : %0.3f %0.3f %0.3f \n", arrival_location, transfer[1], transfer[2], transfer[3]);
+		list_file (LAST, arrival_location);
+		// event_schedule?????
+		if (bus_position == arrival_location && !is_moving) {
+			load();
+		}		
+			
+	} else {
+		 /* This person is not the first in his queue
+		 * so place the arriving person at the end of the appropriate queue.
+		 1. Time of arrival to this location.
+		 2. Destination.
+		 3. How many person is queueing in front of him.  */
+		transfer[1] = sim_time;
+		transfer[2] = destination;
+		transfer[3] = list_size[arrival_location];
+	//printf("Arrival_location %d queue : %0.3f %0.3f %0.3f \n", arrival_location, transfer[1], transfer[2], transfer[3]);
+		list_file (LAST, arrival_location);
 	}
 }
 
-void
-load (void)
-{
-  
-  /* Check to see if all seats are taken. */
-  if (num_seats_taken == MAX_SEATS)
-	{
 
-	  /* All seats in this bus are taken, so place the arriving job at
-		 the end of the appropriate queue. Note that the following data are
-		 stored in the record for each job:
-		 1. Time of arrival to this station.
-		 2. Job type.
-		 3. Current task number. */
 
-	  //transfer[1] = sim_time;
-	  //transfer[2] = job_type;
-	  //transfer[3] = task;
-	  //list_file (LAST, station);
+void bus_arrive(void) {
+	int temp = bus_position;
+	is_moving = 0;
+	
+	if (bus_position == 3) {
+		bus_position = 1;
+	} else {
+		bus_position++;
+		is_loop = 1;
 	}
-
-  else
-	{
-	  
-	  /* A seat in this bus is available, so passenger can come in. */
-	  list_remove (FIRST, bus_position);
-	  //sampst (0.0, station);	/* For station. */
-	  sampst (sim_time - transfer[1], bus_position);	/* For job type. */
-	  ++num_seats_taken;
-	  
-	  transfer[1] = sim_time;
-	  list_file(LAST, 4);
-	  
-	  timest ((double) num_seats_taken, bus_position);
-
-	  /* Schedule a service completion.  Note defining attributes beyond the
-		 first two for the event record before invoking event_schedule. */
-
-	  transfer[3] = destination;
-	  //transfer[4] = task;
-	  event_schedule (sim_time + distance[bus_position][transfer[3]] + load_time, EVENT_DEPARTURE);
-	  
-	  load_time += uniform(load_a, load_b, STREAM_LOADING);
+	
+	// hitung waktu loop
+	if (bus_position == 1 && is_loop){
+		loop_final = sim_time - distance[temp][bus_position];
+		sampst(loop_final - loop_init, 10);
+		loop_init = loop_final;
 	}
+	
+	// hitung waktu visit tiap terminal
+	sampst(sim_time - arrive_time - distance[temp][bus_position], temp + 6);
+	arrive_time = sim_time;
+	
+	//printf("BUS TIBA DI %d jam %0.3f\n", bus_position, sim_time);
+	if (list_size[bus_position+3] > 0 && !is_moving) {
+		unload();
+	} 
+	
+	if (list_size[bus_position] > 0 && !is_moving) {
+		load();
+	}
+	
 }
 
-void
-depart (void)
-{
-  
-	  /* Schedule a service completion.  Note defining attributes beyond the
-		 first two for the event record before invoking event_schedule. */
-	  
-	  unload_time += uniform(unload_a, unload_b, STREAM_UNLOADING);
-	  --num_seats_taken;
+
+void bus_move(void) {
+	int temp = bus_position;
+	int dest;
+	is_moving = 1;
+	if (bus_position == 3) {
+		dest = 1;
+	} else if (bus_position == 2){
+		dest = 3;
+	} else if (bus_position == 1){
+		dest = 2;
+	}
+	
+    //printf("Bus move dari %d ke %d jam %0.3f\n", temp, dest, sim_time);
+//  event_cancel(EVENT_BUS_ARRIVE);
+	event_schedule(sim_time+distance[temp][dest], EVENT_BUS_ARRIVE);
+	//printf("schedule 4 %0.3f bakal nyampe jam\n", sim_time+distance[temp][dest]);
+	
 }
 
-void
-move (void)
-{
-  if (bus_position == 3)
-  {
-	bus_position = 1;
-  } else bus_position++;
-  load_time = 0;
-  unload_time = 0;
+void report(void){
+	fprintf (outfile, "\n\na.\n");
+	for (i = 1; i <= MAX_NUM_LOCATION; i++){
+		filest(i);
+		fprintf (outfile, "  Average number in location %d queue     %0.3f\n", i, transfer[1]);
+		fprintf (outfile, "  Maximum number in location %d queue     %0.3f\n", i, transfer[2]);
+	}
+	
+	fprintf (outfile, "\n\nb.\n");
+	for (i = 1; i <= MAX_NUM_LOCATION; i++){
+		sampst(0.0, -i);
+		fprintf (outfile, "  Average delay in location %d queue     %0.3f\n", i, transfer[1]);
+		fprintf (outfile, "  Maximum delay in location %d queue     %0.3f\n", i, transfer[3]);
+	}
+	
+	fprintf (outfile, "\n\nc.\n");
+	timest(0.0, -1);
+	fprintf (outfile, "  Average number on the bus    %0.3f\n", transfer[1]);
+	fprintf (outfile, "  Maximum number on the bus    %0.3f\n", transfer[2]);
+	
+	fprintf (outfile, "\n\nd.\n");
+	for (i = 1; i <= MAX_NUM_LOCATION; i++){
+		sampst(0.0, -i-6);
+		fprintf (outfile, "  Average time stop in location %d     %0.3f\n", i, transfer[1]);
+		fprintf (outfile, "  Maximum time stop in location %d     %0.3f\n", i, transfer[3]);
+		fprintf (outfile, "  Minimum time stop in location %d     %0.3f\n", i, transfer[4]);
+	}
+	
+	fprintf (outfile, "\n\ne.\n");
+	sampst(0.0, -10);
+	fprintf (outfile, "  Average time to make a loop	%0.3f\n", transfer[1]);
+	fprintf (outfile, "  Maximum time to make a loop	%0.3f\n", transfer[3]);
+	fprintf (outfile, "  Minimum time to make a loop	%0.3f\n", transfer[4]);
+	
+	fprintf (outfile, "\n\nf.\n");
+	for (i = 1; i <= MAX_NUM_LOCATION; i++){
+		sampst(0.0, -i-3);
+		fprintf (outfile, "  Average time person in system from location %d     %0.3f\n", i, transfer[1]);
+		fprintf (outfile, "  Maximum time person in system from location %d     %0.3f\n", i, transfer[3]);
+		fprintf (outfile, "  Minimum time person in system from location %d     %0.3f\n", i, transfer[4]);
+	}
+	
 }
 
 int
 main ()				/* Main function. */
-{
-  bus_position = 3;
-  load_time = 0;
-  unload_time = 0;
+{  
   /* Open input and output files. */
-
   infile = fopen ("car_rental.in", "r");
   outfile = fopen ("car_rental.out", "w");
 
-  /* Read input parameters. */
-
+  // Banyaknya bus, banyaknya location
   fscanf (infile, "%d %d", &num_bus, &num_location);
+  total_passenger = 0;
+  loop_init = 0.0;
+  is_loop = 0;
+  // MEAN INTERARRIVAL RATE PER HOUR AT LOCATION 1, 2, 3
+  for (i = 1; i <= num_location; ++i) {
+	fscanf (infile, "%d", &interarrival_rate[i]);
+	mean_interarrival[i] = 3600.0/interarrival_rate[i]; // mean interarrival in seconds
+  }
   
-  // INTERARRIVAL RATE PER HOUR AT LOCATION 1, 2, 3
-  fscanf (infile, "%d %d %d", &interarrival_rate_1, &interarrival_rate_2, &interarrival_rate_3);
-  // interarrival kedatangan orang dalam detik
-  mean_interarrival_1 = 3600/interarrival_rate_1;
-  mean_interarrival_2 = 3600/interarrival_rate_2;
-  mean_interarrival_3 = 3600/interarrival_rate_3;
- 
   // KAPASITAS PER BUS, KECEPATAN PER HOUR
-  fscanf (infile, "%d %d", &num_seats, &speed);
-  speed = speed * 3600; // miles per second
+  fscanf (infile, "%d %lg", &num_seats, &speed);
+  //printf("NUM SEAT %d\n", num_seats);
+  //printf("mph %0.3f\n", speed);
   
-  // initial location: 3
+  speed = speed / 3600.0; // miles per second
   
   // PELUANG PERSON TURUN KE DESTINATION 1, 2, dan 3
   for (i = 1; i <= num_location; ++i)
     fscanf (infile, "%lg", &prob_distrib_destination[i]);
 
-  // JARAK COUNTER CLOCKWISE LOCATION 3->1, 1->2, 2->3 in MILES
-  for (i = 1; i <= num_location; ++i)
-  {
-	for (j = 1; j <=num_location; ++j)
-	{
+  // Jarak dalam mil dari location i ke location j
+  for (i = 1; i <= num_location; ++i) {
+	for (j = 1; j <=num_location; ++j) {
 	  fscanf (infile, "%lg", &distance[i][j]);
-	}
-  }  
-    
-  // replace jarak dengan waktu tempuh  
-  for (i = 1; i<= num_location; ++i) {
-	distance[i][j] = speed/distance[i][j];
+	  distance[i][j] = distance[i][j]/speed; // replace jarak in miles menjadi waktu tempuh in seconds  
+	  //printf("Waktu tempuh in seconds dari %d ke %d: %0.3f\n", i,j,distance[i][j]);
+    }
   }
-
+  
   // UNLOAD SECONDS
   fscanf (infile, "%d %d", &unload_a, &unload_b);
 
@@ -219,35 +277,65 @@ main ()				/* Main function. */
   fscanf (infile, "%d", &waiting_time);
   waiting_time = waiting_time * 60; // waiting time in seconds
   
-  // LENGTH SIMULATION 80 hours
+  // LENGTH SIMULATION in hours
   fscanf (infile, "%d", &length_simulation);
   length_simulation = length_simulation * 3600; // simulation length in seconds
   
-  /* Initialize all seats in all busses to empty state. */
+  // END OF READING INPUT
+  
+  /* Write report heading and input parameters. */
+  fprintf (outfile, "Car-rental model\n\n");
+  fprintf (outfile, "Number of bus %d\n\n", num_bus);
+  fprintf (outfile, "Number of seats in each bus %d\n\n", num_seats);
+  fprintf (outfile, "Number of destination %d\n\n", num_location);
+  fprintf (outfile, "Distribution function of destination  ");
+  for (i = 1; i <= num_location; ++i)
+    fprintf (outfile, "\n  Location %d %8.3f", i, prob_distrib_destination[i]);
+  fprintf (outfile, "\n\nMean interarrival time of location   ");
+  for (i = 1; i <= num_location; ++i)
+    fprintf (outfile, "\n  Location %d %d per hour", i, interarrival_rate[i]);
+  fprintf (outfile, "\n\nLength of the simulation %d seconds", length_simulation);
+  fprintf (outfile, "\n\nBus speed %lg miles per second\n\n", speed);
+  fprintf (outfile, "Distance from  ");
+  for (i = 1; i<= num_location; ++i)
+    for (j = 1; j<=num_location; ++j) {
+	  fprintf (outfile, "\n  Location %d to %d  %8.3f seconds", i, j, distance[i][j]);
+	}
 
-  for (j = 1; j <= num_bus; ++j)
-    num_seats_taken[j] = 0;
+
+  /* Initialize all seats in bus to the empty state. */
+  for (j = 1; j <= num_seats; ++j)
+    num_seats_taken = 0;
 
   /* Initialize simlib */
-
   init_simlib ();
 
   /* Set maxatr = max(maximum number of attributes per record, 4) */
-
   maxatr = 4;			/* NEVER SET maxatr TO BE SMALLER THAN 4. */
-
-  /* Schedule the arrival at each terminal queue. */
-
-  event_schedule (expon (mean_interarrival_1, STREAM_INTERARRIVAL_1), EVENT_ARRIVAL_1);
-  event_schedule (expon (mean_interarrival_2, STREAM_INTERARRIVAL_2), EVENT_ARRIVAL_2);
-  event_schedule (expon (mean_interarrival_3, STREAM_INTERARRIVAL_3), EVENT_ARRIVAL_3);
-
+  
   /* Schedule the end of the simulation.  (This is needed for consistency of
-     units.) */
-
+     units.) HARUS DISCHEDULE PERTAMA*/
   event_schedule (length_simulation, EVENT_END_SIMULATION);
+//    event_schedule (4000, EVENT_END_SIMULATION);
+  
+  /* Schedule the arrival of the first person in each location. */
+  event_schedule (expon (mean_interarrival[1], STREAM_INTERARRIVAL_1), EVENT_ARRIVAL_1);
+  event_schedule (expon (mean_interarrival[2], STREAM_INTERARRIVAL_2), EVENT_ARRIVAL_2);
+  event_schedule (expon (mean_interarrival[3], STREAM_INTERARRIVAL_3), EVENT_ARRIVAL_3);
 
-  /* Run the simulation until it terminates after an end-simulation event
+  // Location awal bus
+  bus_position = 3;
+
+  /* Schedule the first arrival of bus in location. */
+  event_schedule (sim_time, EVENT_BUS_DEPART);
+  
+  /* Setting location list to stay ordered by attribute arrival time */
+  for (i = 1; i<=num_location; ++i)
+  {
+	list_rank[i] = 1;  
+  }
+  
+  /* Run the simulation until it terminates after an end-simulation event 
      (type EVENT_END_SIMULATION) occurs. */
 
   do
@@ -257,25 +345,25 @@ main ()				/* Main function. */
 
       timing ();
 
-      /* Invoke the appropriate event function. */
+	  /* Invoke the appropriate event function. */
 
       switch (next_event_type)
 	{
 	case EVENT_ARRIVAL_1:
-	  arrive (1);
+	  arrive(1);
 	  break;
-	case EVENT_ARRIVAL_2:
-	  arrive (2);
-	  break;
-	case EVENT_ARRIVAL_3:
-	  arrive (3);
-	  break;
-	case EVENT_DEPARTURE:
-	  depart ();
-	  break;
-	case EVENT_MOVE:
-	  move ();
-	  break;
+    case EVENT_ARRIVAL_2:
+      arrive(2);
+      break;
+    case EVENT_ARRIVAL_3:
+      arrive(3);
+      break;
+	case EVENT_BUS_ARRIVE:
+      bus_arrive();
+      break;
+	case EVENT_BUS_DEPART:
+	  bus_move();
+      break;
 	case EVENT_END_SIMULATION:
 	  report ();
 	  break;
@@ -287,17 +375,30 @@ main ()				/* Main function. */
 
     }
   while (next_event_type != EVENT_END_SIMULATION);
+  //printf("total passenger %d\n", total_passenger);
+/*
+i = 1;
+while (list_size[4] >0) {
+	list_remove(FIRST,4);
+	printf("ISI BUS %d arrival_time to terminal %0.3f, destination %0.3f, arrival_location %0.3f\n", i, transfer[1], transfer[2], transfer[3]);
+	i++;
+}
 
+i = 1;
+while (list_size[5] >0) {
+	list_remove(FIRST,5);
+	printf("ISI BUS %d arrival_time to terminal %0.3f, destination %0.3f, arrival_location %0.3f\n", i, transfer[1], transfer[2], transfer[3]);
+	i++;
+}
+
+i = 1;
+while (list_size[6] >0) {
+	list_remove(FIRST,6);
+	printf("ISI BUS %d arrival_time to terminal %0.3f, destination %0.3f, arrival_location %0.3f\n", i, transfer[1], transfer[2], transfer[3]);
+	i++;
+}*/
   fclose (infile);
   fclose (outfile);
   
-  /*
-  printf("Jumlah lokasi: %d\n", num_location);
-  printf("Unload a: %d\n", unload_a);
-  printf("Distance 3 to 1 %lg\n", destination[1]);
-  printf("Kecepatan: %d\n", speed);
-  printf("Length simulation %d\n", length_simulation);
-  */ 
-
   return 0;
 }
