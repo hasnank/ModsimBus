@@ -1,4 +1,5 @@
 /* 
+ * WITH LOG
  * Tugas 1 IF 4021 Pemodelan dan Simulasi
  * NAMA - NIM: Hasna Nur Karimah - 13514106
  * NAMA - NIM: Audry Nyonata     - 13515087
@@ -41,6 +42,7 @@ void load(void) {
 	while (list_size[bus_position]>0 && (num_seats_taken < 20)) {
 		list_remove(FIRST,bus_position);
 		transfer[3] = bus_position; //mengubah atribut yang tadinya nyimpen orang di depannya, jadi arrival_location
+		printf("Masuk ke bus di jam %0.3f arrival_time: %0.3f destination: %0.3f arrival_location: %0.3f\n", sim_time+load_time, transfer[1], transfer[2], transfer[3]);
 		
 		if (transfer[2] == 1) {
 			list_file(LAST,4);
@@ -56,6 +58,7 @@ void load(void) {
 		load_time += uniform(load_a,load_b,STREAM_LOADING);
 		event_cancel(EVENT_BUS_DEPART);
 		event_schedule(sim_time+waiting_time+load_time, EVENT_BUS_DEPART);
+		printf("Loading mengundur jadwal keberangkatan bus menjadi %0.3f\n", sim_time+waiting_time+load_time);
 	}
 	load_time = 0;
 }
@@ -65,12 +68,14 @@ void unload(void) {
 	while (list_size[bus_position+3] >0) {
 		load_time += uniform(unload_a, unload_b,STREAM_UNLOADING);
 		list_remove(FIRST,bus_position+3);
+		printf("Keluar dari bus di waktu %0.3f arrival_time: %0.3f destination: %0.3f arrival_location: %0.3f\n", load_time+sim_time, transfer[1], transfer[2], transfer[3]);
 		--num_seats_taken;
 		timest((double) num_seats_taken, 1);
 		sampst(sim_time - transfer[1] + load_time, bus_position + 3);
 	}
 	event_cancel(EVENT_BUS_DEPART);
 	event_schedule(sim_time+waiting_time+load_time, EVENT_BUS_DEPART);
+	printf("Unloading mengundur jadwal keberangkatan bus menjadi %0.3f\n", sim_time+waiting_time+load_time);
 	
 }	  
 void
@@ -99,6 +104,7 @@ arrive(int arrival_location)	/* Function to serve an arrival event of a person t
 		transfer[1] = sim_time;
 		transfer[2] = destination;
 		transfer[3] = person;
+		printf("Arrival_location %d : %0.3f %0.3f %0.3f \n", arrival_location, transfer[1], transfer[2], transfer[3]);
 		list_file (LAST, arrival_location);
 
 		/* hanya boleh naik ketika bus sedang tidak bergerak */
@@ -115,6 +121,7 @@ arrive(int arrival_location)	/* Function to serve an arrival event of a person t
 		transfer[1] = sim_time;
 		transfer[2] = destination;
 		transfer[3] = list_size[arrival_location];
+		printf("Arrival_location %d queue : %0.3f %0.3f %0.3f \n", arrival_location, transfer[1], transfer[2], transfer[3]);
 		list_file (LAST, arrival_location);
 	}
 }
@@ -144,6 +151,7 @@ void bus_arrive(void) {
 	sampst(sim_time - arrive_time - distance[temp][bus_position], temp + 6);
 	arrive_time = sim_time;
 	
+	printf("Bus tiba di %d jam %0.3f\n", bus_position, sim_time);
 	if (list_size[bus_position+3] > 0 && !is_moving) {
 		unload();
 	} 
@@ -166,7 +174,9 @@ void bus_move(void) {
 		dest = 2;
 	}
 	
+    printf("Bus bergerak dari %d ke %d jam %0.3f\n", temp, dest, sim_time);
 	event_schedule(sim_time+distance[temp][dest], EVENT_BUS_ARRIVE);
+	printf("Menjadwalkan bus agar tiba jam %0.3f\n", sim_time+distance[temp][dest]);
 	
 }
 
@@ -355,6 +365,30 @@ main ()				/* Main function. */
 
     }
   while (next_event_type != EVENT_END_SIMULATION);
+  printf("Total penumpang %d\n", total_passenger);
+  
+  // MENCETAK PENUMPANG YANG BERADA DI BUS SAAT SIMULASI BERAKHIR
+  i = 1;
+  while (list_size[4] >0) {
+	list_remove(FIRST,4);
+	printf("%d Isi bus destination %0.3f, arrival_time to terminal %0.3f, arrival_location %0.3f\n", i, transfer[2], transfer[1], transfer[3]);
+	i++;
+  }
+
+  i = 1;
+  while (list_size[5] >0) {
+	list_remove(FIRST,5);
+	printf("%d Isi bus destination %0.3f, arrival_time to terminal %0.3f, arrival_location %0.3f\n", i, transfer[2], transfer[1], transfer[3]);
+	i++;
+  }
+
+  i = 1;
+  while (list_size[6] >0) {
+	list_remove(FIRST,6);
+	printf("%d Isi bus destination %0.3f, arrival_time to terminal %0.3f, arrival_location %0.3f\n", i, transfer[2], transfer[1], transfer[3]);
+	i++;
+  }
+  
   
   fclose (infile);
   fclose (outfile);

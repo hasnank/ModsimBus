@@ -12,9 +12,9 @@ Distribution function of destination
   Location 3    1.000
 
 Mean interarrival time of location   
-  Location 1 14 per hour
-  Location 2 10 per hour
-  Location 3 24 per hour
+  Location 1 257.143 seconds per interarrival
+  Location 2 360.000 seconds per interarrival
+  Location 3 150.000 seconds per interarrival
 
 Length of the simulation 288000 seconds
 
